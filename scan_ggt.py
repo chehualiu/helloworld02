@@ -7,7 +7,7 @@ import pandas as pd
 from datetime import datetime
 from pytdx.hq import TdxHq_API
 from pytdx.exhq import TdxExHq_API
-from utils.tdx_hosts import hq_hosts, Exhq_hosts
+from tdx_hosts import hq_hosts, Exhq_hosts
 import configparser
 
 class mytdxData(object):
