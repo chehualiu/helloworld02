@@ -249,7 +249,7 @@ class MyApp:
 
     def process_single_stock(self, tdxdata, stock_code):
         df_min = tdxdata.get_minute_today(stock_code)
-        df_min = df_min[:177]
+        # df_min = df_min[:177]
         if len(df_min)<self.barstart or len(df_min)>self.barend:
             return 0
         elif df_min['price'].values[-1]<self.minPrice:
