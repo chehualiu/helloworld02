@@ -271,11 +271,15 @@ class MyApp:
             if df_min['amt'].mean() < minAmount:
                 return '',0
             df_min.reset_index(drop=False, inplace=True)
+            df_min['m10pct'] = df_min['price']/df_min['price'].shift(10)-1
+            df_min['m10drop'] = df_min['m10pct'] < -0.01
+            df_min['m10drop'] = df_min['m10drop'].map({True: 1, False: 0})
+            df_min['m10dropflag'] = df_min['m10drop'].rolling(window=3).sum()
             close = df_min['price']
             r1 = REF(close, 1)
             RSI = SMA(MAX(close - r1, 0), self.RSIN, 1) / SMA(ABS(close - r1), self.RSIN, 1)
             df_min['RSI'] = RSI
-            df_min['lowsig'] = (df_min['RSI'].shift(1) < self.RSILow) & (df_min['RSI'] > df_min['RSI'].shift(1))
+            df_min['lowsig'] = (df_min['RSI'].shift(1) < self.RSILow) & (df_min['RSI'] > df_min['RSI'].shift(1)) & (df_min['m10dropflag'] > 0)
             df_min['higsig'] = (df_min['price'].values[-1] == df_min['price'].max()) & (df_min['price'].values[-2] < df_min['price'][:-1].max())
 
             if df_min['lowsig'].values[-1] == True:
