@@ -11,7 +11,7 @@ from tdx_hosts import hq_hosts, Exhq_hosts
 import configparser
 import logging
 from tdx_hosts import hq_hosts, Exhq_hosts
-from tdx_indicator import *
+from tdx_indicator import REF,SMA,MAX,ABS
 
 warnings.filterwarnings("ignore")
 
