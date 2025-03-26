@@ -280,7 +280,7 @@ class MyApp:
             RSI = SMA(MAX(close - r1, 0), self.RSIN, 1) / SMA(ABS(close - r1), self.RSIN, 1)
             df_min['RSI'] = RSI
             df_min['lowsig'] = (df_min['RSI'].shift(1) < self.RSILow) & (df_min['RSI'] > df_min['RSI'].shift(1)) & (df_min['m10dropflag'] > 0)
-            df_min['higsig'] = (df_min['price'].values[-1] == df_min['price'].max()) & (df_min['price'].values[-2] < df_min['price'][:-1].max())
+            df_min['higsig'] = (df_min['price'].values[-1] == df_min['price'].max()) & (len(df_min[df_min['price']==df_min['price'].max()]==1))
 
             if df_min['lowsig'].values[-1] == True:
                 return '低位',round(df_min['price'].values[-1], 3)
