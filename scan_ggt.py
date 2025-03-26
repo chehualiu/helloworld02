@@ -126,7 +126,8 @@ def initialize_api(N):
 
 
 class MyApp:
-    def __init__(self, root, df_list, rate_vol,minAmount,barstart,barend,minPrice,RSIN,min2pct,waitSeconds, api_instances):
+    def __init__(self, root, df_list, rate_vol,minAmount,barstart,barend,minPrice,RSIN,RSILow,RSIHigh,
+                 min2pct,waitSeconds, api_instances):
         self.root = root
         self.root.title("港股通扫描程序")
         self.batchCnt = len(api_instances)
@@ -139,6 +140,8 @@ class MyApp:
         self.barend = barend
         self.minPrice = minPrice
         self.RSIN = RSIN
+        self.RSILow = RSILow
+        self.RSIHigh = RSIHigh
         self.minAmount = minAmount
 
         stockPerBatch = len(df_list) // self.batchCnt
@@ -216,6 +219,7 @@ class MyApp:
     def update_text_area(self, message):
         # Update the text area in the main thread
         # self.root.after(0, lambda: self.scroll_text.insert(tk.END, message + "\n"))
+        message = '------------------\n' + message
         self.root.after(0, lambda: self.update_event(message))
         # logging.info(message)
 
@@ -271,17 +275,13 @@ class MyApp:
             r1 = REF(close, 1)
             RSI = SMA(MAX(close - r1, 0), self.RSIN, 1) / SMA(ABS(close - r1), self.RSIN, 1)
             df_min['RSI'] = RSI
-            df_min['lowsig'] = (df_min['RSI'].shift(1) < 0.2) & (df_min['RSI'] > df_min['RSI'].shift(1))
-            df_min['higsig'] = (df_min['RSI'].shift(1) > 0.8) & (df_min['RSI'] < df_min['RSI'].shift(1))
-            df_min['sig2'] = df_min.apply(lambda x: (x['lowsig'] == True) | (x['higsig'] == True), axis=1)
-            df_min['sig2'] = df_min.apply(lambda x: 1 if x['sig2'] == True else 0, axis=1)
-            df_min['sig3'] = df_min['sig2'].rolling(window=5, min_periods=1).sum()
-            df_min['sig'] = (df_min['sig3'] == 1) & (df_min['sig3'].shift(1) == 0)
-            # df_min = df_min[df_min['sig'] == True]
+            df_min['lowsig'] = (df_min['RSI'].shift(1) < self.RSILow) & (df_min['RSI'] > df_min['RSI'].shift(1))
+            df_min['higsig'] = (df_min['price'].values[-1] == df_min['price'].max()) & (df_min['price'].values[-2] < df_min['price'][:-1].max())
+
             if df_min['lowsig'].values[-1] == True:
                 return '低位',round(df_min['price'].values[-1], 3)
             elif df_min['higsig'].values[-1] == True:
-                return '高位',round(df_min['price'].values[-1], 3)
+                return '新高',round(df_min['price'].values[-1], 3)
             else:
                 return '',0
 
@@ -301,6 +301,8 @@ if __name__ == "__main__":
     rate_vol = float(dict(config.items('params'))['rate_vol'])
     minPrice = float(dict(config.items('params'))['minprice'])
     minAmount = float(dict(config.items('params'))['minamount'])
+    RSILow = float(dict(config.items('params'))['rsilow'])
+    RSIHigh = float(dict(config.items('params'))['rsihigh'])
     waitSeconds = int(dict(config.items('params'))['timegap'])
     instances = initialize_api(NumThreads)
 
@@ -316,6 +318,7 @@ if __name__ == "__main__":
     root = tk.Tk()
     app = MyApp(root, df_list=df_list, rate_vol=rate_vol, minAmount=minAmount,
                 barstart=barstart, barend=barend, minPrice=minPrice,RSIN=RSIN,
+                RSILow = RSILow, RSIHigh = RSIHigh,
                 min2pct=min2pct, waitSeconds=waitSeconds, api_instances=instances)
     root.mainloop()
 
