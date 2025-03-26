@@ -2,7 +2,7 @@ import tkinter as tk
 from tkinter import scrolledtext
 from concurrent.futures import ThreadPoolExecutor
 import requests
-import time,warnings
+import time
 import pandas as pd
 from datetime import datetime
 from pytdx.hq import TdxHq_API
@@ -10,10 +10,6 @@ from pytdx.exhq import TdxExHq_API
 from tdx_hosts import hq_hosts, Exhq_hosts
 import configparser
 import logging
-from utils.tdx_hosts import hq_hosts, Exhq_hosts
-from utils.tdx_indicator import *
-
-warnings.filterwarnings("ignore")
 
 class mytdxData(object):
 
@@ -236,10 +232,10 @@ class MyApp:
         counter = 0
         batch_result = []
         for code, name in batch.items():
-            reason,rtn = self.process_single_stock(tdxdata, code)
+            rtn = self.process_single_stock(tdxdata, code)
             if rtn > 0:
                 # self.root.after(0, self.update_result, code, name, current_time, rtn)
-                batch_result.append(f"{current_time} {reason} {code} {name} {rtn:.2f}")
+                batch_result.append(f"{current_time} {code} {name} {rtn:.2f}")
 
             counter += 1
             if counter % 100 == 0:
@@ -248,8 +244,8 @@ class MyApp:
                 print('.', end='', flush=True)
 
         str_result = "\n".join(batch_result)
-        # print('batch result:\n',  str_result)
-        print(f'{current_time} batch completed in: {(time.time() - batch_start):.2f} secs.')
+        print('batch result:\n',  str_result)
+        print(f'batch completed in: {(time.time() - batch_start):.2f} secs.')
 
         return str_result
 
@@ -257,28 +253,27 @@ class MyApp:
         df_min = tdxdata.get_minute_today(stock_code)
         # df_min = df_min[:177]
         if len(df_min)<self.barstart or len(df_min)>self.barend:
-            return '',0
+            return 0
         elif df_min['price'].values[-1]<self.minPrice:
-            return '',0
+            return 0
         else:
             df_min.reset_index(drop=False, inplace=True)
-            close = df_min['price']
-            r1 = REF(close, 1)
-            RSI = SMA(MAX(close - r1, 0), 6, 1) / SMA(ABS(close - r1), 6, 1)
-            df_min['RSI'] = RSI
-            df_min['lowsig'] = (df_min['RSI'].shift(1) < 0.2) & (df_min['RSI'] > df_min['RSI'].shift(1))
-            df_min['higsig'] = (df_min['RSI'].shift(1) > 0.8) & (df_min['RSI'] < df_min['RSI'].shift(1))
-            df_min['sig2'] = df_min.apply(lambda x: (x['lowsig'] == True) | (x['higsig'] == True), axis=1)
-            df_min['sig2'] = df_min.apply(lambda x: 1 if x['sig2'] == True else 0, axis=1)
-            df_min['sig3'] = df_min['sig2'].rolling(window=5, min_periods=1).sum()
-            df_min['sig'] = (df_min['sig3'] == 1) & (df_min['sig3'].shift(1) == 0)
-            # df_min = df_min[df_min['sig'] == True]
-            if df_min['lowsig'].values[-1] == True:
-                return '低位',round(df_min['price'].values[-1], 3)
-            elif df_min['higsig'].values[-1] == True:
-                return '高位',round(df_min['price'].values[-1], 3)
+            df_min['index'] = df_min['index'].apply(lambda x: x + 1)
+            df_min['pctr2'] = df_min['price'] / df_min['price'].shift(2)*100-100
+            df_min['acc_vol'] = df_min['volume'].cumsum()
+            df_min['avg_vol'] = df_min['acc_vol'] / df_min['index']
+            df_min['rate_vol'] = df_min['volume'] / df_min['avg_vol'].shift(1)
+            df_min['flt_price1'] = df_min['price'] > df_min['avg_price']
+            df_min['flt_price'] = (df_min['flt_price1'] == True) & (df_min['flt_price1'].shift(2) == False)
+            df_min['flt_volume'] = df_min['rate_vol'] > self.rate_vol
+            df_min['flt_amount'] = df_min.apply(lambda x: x['volume']*x['price']>self.minAmount, axis=1)
+            df_min['flt_pctr2'] = df_min.apply(lambda x: x['pctr2']>self.min2pct,axis=1)
+            df_min['flag'] = (df_min['flt_price'] == True) & (df_min['flt_volume'] == True) & (df_min['flt_amount'] == True) & (df_min['flt_pctr2'] == True)
+
+            if df_min['flag'].values[-1] == True:
+                return round(df_min['price'].values[-1],3)
             else:
-                return '',0
+                return 0
 
 
 # Main program
