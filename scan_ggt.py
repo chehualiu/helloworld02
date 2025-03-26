@@ -293,7 +293,7 @@ if __name__ == "__main__":
     config = configparser.ConfigParser()
     config.read(cfg_fn, encoding='utf-8')
     NumThreads = int(dict(config.items('params'))['numthreads'])  
-    RSIN = int(dict(config.items('params'))['RSIN'])
+    RSIN = int(dict(config.items('params'))['rsin'])
     barstart = int(dict(config.items('params'))['barstart'])
     barend = int(dict(config.items('params'))['barend'])
     fn_stocklist = dict(config.items('params'))['stock_path']
