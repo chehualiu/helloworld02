@@ -263,7 +263,7 @@ class MyApp:
         else:
             df_min['amt'] = df_min['price'] * df_min['volume']
             if df_min['amt'].mean() < minAmount:
-                return 0
+                return '',0
             df_min.reset_index(drop=False, inplace=True)
             close = df_min['price']
             r1 = REF(close, 1)
