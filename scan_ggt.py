@@ -10,8 +10,8 @@ from pytdx.exhq import TdxExHq_API
 from tdx_hosts import hq_hosts, Exhq_hosts
 import configparser
 import logging
-from utils.tdx_hosts import hq_hosts, Exhq_hosts
-from utils.tdx_indicator import *
+from tdx_hosts import hq_hosts, Exhq_hosts
+from tdx_indicator import *
 
 warnings.filterwarnings("ignore")
 
