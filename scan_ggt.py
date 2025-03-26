@@ -214,8 +214,9 @@ class MyApp:
 
     def update_text_area(self, message):
         # Update the text area in the main thread
-        self.root.after(0, lambda: self.scroll_text.insert(tk.END, message + "\n"))
-        logging.info(message)
+        # self.root.after(0, lambda: self.scroll_text.insert(tk.END, message + "\n"))
+        self.root.after(0, lambda: self.update_event(message))
+        # logging.info(message)
 
     def update_result(self, stock_code, stock_name, current_time, price):
         # Display stock information in the GUI
