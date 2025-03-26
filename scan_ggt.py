@@ -126,7 +126,7 @@ def initialize_api(N):
 
 
 class MyApp:
-    def __init__(self, root, df_list, rate_vol,minAmount,barstart,barend,minPrice,min2pct,waitSeconds, api_instances):
+    def __init__(self, root, df_list, rate_vol,minAmount,barstart,barend,minPrice,RSIN,min2pct,waitSeconds, api_instances):
         self.root = root
         self.root.title("港股通扫描程序")
         self.batchCnt = len(api_instances)
@@ -138,6 +138,7 @@ class MyApp:
         self.barstart = barstart
         self.barend = barend
         self.minPrice = minPrice
+        self.RSIN = RSIN
         self.minAmount = minAmount
 
         stockPerBatch = len(df_list) // self.batchCnt
@@ -268,7 +269,7 @@ class MyApp:
             df_min.reset_index(drop=False, inplace=True)
             close = df_min['price']
             r1 = REF(close, 1)
-            RSI = SMA(MAX(close - r1, 0), 6, 1) / SMA(ABS(close - r1), 6, 1)
+            RSI = SMA(MAX(close - r1, 0), self.RSIN, 1) / SMA(ABS(close - r1), self.RSIN, 1)
             df_min['RSI'] = RSI
             df_min['lowsig'] = (df_min['RSI'].shift(1) < 0.2) & (df_min['RSI'] > df_min['RSI'].shift(1))
             df_min['higsig'] = (df_min['RSI'].shift(1) > 0.8) & (df_min['RSI'] < df_min['RSI'].shift(1))
@@ -291,7 +292,8 @@ if __name__ == "__main__":
     cfg_fn = 'scan_ggt.cfg'
     config = configparser.ConfigParser()
     config.read(cfg_fn, encoding='utf-8')
-    NumThreads = int(dict(config.items('params'))['numthreads'])
+    NumThreads = int(dict(config.items('params'))['numthreads'])  
+    RSIN = int(dict(config.items('params'))['RSIN'])
     barstart = int(dict(config.items('params'))['barstart'])
     barend = int(dict(config.items('params'))['barend'])
     fn_stocklist = dict(config.items('params'))['stock_path']
@@ -313,7 +315,7 @@ if __name__ == "__main__":
 
     root = tk.Tk()
     app = MyApp(root, df_list=df_list, rate_vol=rate_vol, minAmount=minAmount,
-                barstart=barstart, barend=barend, minPrice=minPrice,
+                barstart=barstart, barend=barend, minPrice=minPrice,RSIN=RSIN,
                 min2pct=min2pct, waitSeconds=waitSeconds, api_instances=instances)
     root.mainloop()
 
