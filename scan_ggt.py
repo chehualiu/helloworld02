@@ -117,6 +117,16 @@ class mytdxData(object):
         return data
 
 
+    def get_day_kline(self, code):
+        mkt,code,fuquan,isIndex = self.get_market_code(code)
+
+        if mkt in [71] and isIndex==False:
+            data = pd.DataFrame(self.Exapi.get_instrument_bars(8,mkt, code,0,10))
+        else:
+            data = pd.DataFrame()
+        return data
+
+
 def initialize_api(N):
     instances = []
     for i in range(N):
@@ -260,6 +270,15 @@ class MyApp:
         return str_result
 
     def process_single_stock(self, tdxdata, stock_code):
+        df_day = tdxdata.get_day_kline(stock_code)
+        if len(df_day) < 5:
+            return '', 0
+        else:
+            df_day['ma5'] = df_day['close'].rolling(window=5).mean()
+            if df_day['ma5'].values[-1] < df_day['ma5'].values[-2]:
+                return '', 0
+
+
         df_min = tdxdata.get_minute_today(stock_code)
         # df_min = df_min[:177]
         if len(df_min)<self.barstart or len(df_min)>self.barend:
