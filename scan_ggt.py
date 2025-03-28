@@ -279,12 +279,24 @@ class MyApp:
             r1 = REF(close, 1)
             RSI = SMA(MAX(close - r1, 0), self.RSIN, 1) / SMA(ABS(close - r1), self.RSIN, 1)
             df_min['RSI'] = RSI
-            df_min['lowsig'] = (df_min['RSI'].shift(1) < self.RSILow) & (df_min['RSI'] > df_min['RSI'].shift(1)) & (df_min['m10dropflag'] > 0)
-            df_min['higsig'] = (df_min['price'].values[-1] == df_min['price'].max()) & (len(df_min[df_min['price']==df_min['price'].max()])==1)
+            df_min['lowupsig'] = (df_min['RSI'].shift(1) < 0.2) & (df_min['RSI'] > df_min['RSI'].shift(1)) & (df_min['m10dropflag'] > 0)
 
-            if df_min['lowsig'].values[-1] == True:
-                return '低位',round(df_min['price'].values[-1], 3)
-            elif df_min['higsig'].values[-1] == True:
+            df_min['cummax'] = df_min['price'].cummax()
+            df_min['cummin'] = df_min['price'].cummin()
+            df_min['higsig'] = ((df_min['price'] == df_min['cummax']) & (df_min['price'] > df_min['price'].shift(1))).map({True: 1, False: 0})
+            df_min['lowsig'] = ((df_min['price'] == df_min['cummin']) & (df_min['price'] < df_min['price'].shift(1))).map({True: 1, False: 0})
+            higgroup = (df_min['higsig'] != df_min['higsig'].shift()).cumsum()
+            df_min['higgroup'] = higgroup
+            df_min['higcons'] = df_min.groupby('higgroup').cumcount() + 1
+            df_min['higcons_cnt'] = df_min.apply(lambda x: x['higcons'] if x['higsig'] == 1 else 0, axis=1)
+            lowgroup = (df_min['lowsig'] != df_min['lowsig'].shift()).cumsum()
+            df_min['lowgroup'] = lowgroup
+            df_min['lowcons'] = df_min.groupby('lowgroup').cumcount() + 1
+            df_min['lowcons_cnt'] = df_min.apply(lambda x: x['lowcons'] if x['lowsig'] == 1 else 0, axis=1)
+
+            if df_min['lowupsig'].values[-1] == True:
+                return '低位回升',round(df_min['price'].values[-1], 3)
+            elif df_min['higcons_cnt'].values[-1] > 1:
                 return '新高',round(df_min['price'].values[-1], 3)
             else:
                 return '',0
