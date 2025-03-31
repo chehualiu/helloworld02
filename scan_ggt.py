@@ -117,11 +117,11 @@ class mytdxData(object):
         return data
 
 
-    def get_day_kline(self, code,N):
+    def get_day_kline(self, code,N=22):
         mkt,code,fuquan,isIndex = self.get_market_code(code)
 
         if mkt in [71] and isIndex==False:
-            data = pd.DataFrame(self.Exapi.get_instrument_bars(8,mkt, code,0,N))
+            data = pd.DataFrame(self.Exapi.get_instrument_bars(9,mkt, code,0,N))
         else:
             data = pd.DataFrame()
         return data
@@ -270,7 +270,7 @@ class MyApp:
         return str_result
 
     def process_single_stock(self, tdxdata, stock_code):
-        df_day = tdxdata.get_day_kline(stock_code,21)
+        df_day = tdxdata.get_day_kline(stock_code,22)
         if len(df_day) < 21:
             return '', 0
         else:
@@ -314,8 +314,8 @@ if __name__ == "__main__":
     logging.basicConfig(filename=log_filename, level=logging.INFO, format='%(asctime)s - %(message)s')
 
     df_list = pd.read_csv(fn_stocklist, encoding='gbk', dtype={'code': str})
-    df_list = df_list[df_list['flag'] == 'Y']
-    # df_list = df_list[:5]
+    # df_list = df_list[df_list['flag'] == 'Y']
+    df_list = df_list[df_list['code'] == '01797']
 
     print(f'''共{len(df_list)}只股票待扫描''')
 
