@@ -278,6 +278,10 @@ class MyApp:
             df_day['ma20'] = df_day['close'].rolling(window=20).mean()
             if df_day['ma5'].values[-1]<df_day['ma5'].values[-2] or df_day['ma20'].values[-1]<df_day['ma20'].values[-2]:
                 return '', 0
+            elif df_day['ma5'].values[-1]<df_day['ma20'].values[-1]:
+                return '', 0
+            elif df_day['ma5'].values[-1]<df_day['close'].values[-1]:
+                return '', 0
 
             r5 = df_day['close'].values[-5]
             r20 = df_day['close'].values[-20]
