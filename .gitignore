@@ -12,6 +12,7 @@ build/
 history/
 develop-eggs/
 dist/
+output/
 downloads/
 eggs/
 .eggs/

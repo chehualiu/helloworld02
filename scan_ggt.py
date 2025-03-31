@@ -117,11 +117,11 @@ class mytdxData(object):
         return data
 
 
-    def get_day_kline(self, code):
+    def get_day_kline(self, code,N):
         mkt,code,fuquan,isIndex = self.get_market_code(code)
 
         if mkt in [71] and isIndex==False:
-            data = pd.DataFrame(self.Exapi.get_instrument_bars(8,mkt, code,0,10))
+            data = pd.DataFrame(self.Exapi.get_instrument_bars(8,mkt, code,0,N))
         else:
             data = pd.DataFrame()
         return data
@@ -270,53 +270,22 @@ class MyApp:
         return str_result
 
     def process_single_stock(self, tdxdata, stock_code):
-        df_day = tdxdata.get_day_kline(stock_code)
-        if len(df_day) < 5:
+        df_day = tdxdata.get_day_kline(stock_code,21)
+        if len(df_day) < 21:
             return '', 0
         else:
             df_day['ma5'] = df_day['close'].rolling(window=5).mean()
-            if df_day['ma5'].values[-1] < df_day['ma5'].values[-2]:
+            df_day['ma20'] = df_day['close'].rolling(window=20).mean()
+            if df_day['ma5'].values[-1]<df_day['ma5'].values[-2] or df_day['ma20'].values[-1]<df_day['ma20'].values[-2]:
                 return '', 0
 
+            r5 = df_day['close'].values[-5]
+            r20 = df_day['close'].values[-20]
 
-        df_min = tdxdata.get_minute_today(stock_code)
-        # df_min = df_min[:177]
-        if len(df_min)<self.barstart or len(df_min)>self.barend:
-            return '',0
-        elif df_min['price'].values[-1]<self.minPrice:
-            return '',0
-        else:
-            df_min['amt'] = df_min['price'] * df_min['volume']
-            if df_min['amt'].mean() < minAmount:
-                return '',0
-            df_min.reset_index(drop=False, inplace=True)
-            df_min['m10pct'] = df_min['price']/df_min['price'].shift(10)-1
-            df_min['m10drop'] = df_min['m10pct'] < -0.01
-            df_min['m10drop'] = df_min['m10drop'].map({True: 1, False: 0})
-            df_min['m10dropflag'] = df_min['m10drop'].rolling(window=3).sum()
-            close = df_min['price']
-            r1 = REF(close, 1)
-            RSI = SMA(MAX(close - r1, 0), self.RSIN, 1) / SMA(ABS(close - r1), self.RSIN, 1)
-            df_min['RSI'] = RSI
-            df_min['lowupsig'] = (df_min['RSI'].shift(1) < 0.2) & (df_min['RSI'] > df_min['RSI'].shift(1)) & (df_min['m10dropflag'] > 0)
-
-            df_min['cummax'] = df_min['price'].cummax()
-            df_min['cummin'] = df_min['price'].cummin()
-            df_min['higsig'] = ((df_min['price'] == df_min['cummax']) & (df_min['price'] > df_min['price'].shift(1))).map({True: 1, False: 0})
-            df_min['lowsig'] = ((df_min['price'] == df_min['cummin']) & (df_min['price'] < df_min['price'].shift(1))).map({True: 1, False: 0})
-            higgroup = (df_min['higsig'] != df_min['higsig'].shift()).cumsum()
-            df_min['higgroup'] = higgroup
-            df_min['higcons'] = df_min.groupby('higgroup').cumcount() + 1
-            df_min['higcons_cnt'] = df_min.apply(lambda x: x['higcons'] if x['higsig'] == 1 else 0, axis=1)
-            lowgroup = (df_min['lowsig'] != df_min['lowsig'].shift()).cumsum()
-            df_min['lowgroup'] = lowgroup
-            df_min['lowcons'] = df_min.groupby('lowgroup').cumcount() + 1
-            df_min['lowcons_cnt'] = df_min.apply(lambda x: x['lowcons'] if x['lowsig'] == 1 else 0, axis=1)
-
-            if df_min['lowupsig'].values[-1] == True:
-                return '低位回升',round(df_min['price'].values[-1], 3)
-            elif df_min['higcons_cnt'].values[-1] > 1:
-                return '新高',round(df_min['price'].values[-1], 3)
+            df_min = tdxdata.get_minute_today(stock_code)
+            df_min['flag'] = df_min['price'].apply(lambda x: 1 if x>r5 and x>r20 else 0)
+            if df_min['flag'].values[-1]==1 and df_min['flag'].values[-3]==0:
+                return '上穿信号',round(df_min['price'].values[-1], 3)
             else:
                 return '',0
 
